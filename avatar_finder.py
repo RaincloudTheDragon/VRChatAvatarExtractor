@@ -310,10 +310,16 @@ if found_avatars:
                 f.write("=" * 60 + "\n\n")
                 
                 for i, (avatar_id, folder_name) in enumerate(found_avatars.items(), 1):
-                    print(f"Fetching name for avatar {i}/{len(found_avatars)}: {avatar_id}")
+                    print(f"\n[{i}/{len(found_avatars)}] Fetching: {avatar_id}")
                     
                     url = f"https://vrchat.com/home/avatar/{avatar_id}"
                     avatar_name = get_avatar_name_simple(avatar_id, cookies)
+                    
+                    # Print the result immediately
+                    if "Error" in avatar_name or "not found" in avatar_name:
+                        print(f"  ❌ {avatar_name}")
+                    else:
+                        print(f"  ✅ {avatar_name}")
                     
                     f.write(f"Avatar: {avatar_name}\n")
                     f.write(f"URL: {url}\n")
