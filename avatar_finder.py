@@ -3,10 +3,22 @@ import re
 import requests
 from bs4 import BeautifulSoup
 import time
+import argparse
+
+# Parse command line arguments
+parser = argparse.ArgumentParser(description='Extract VRChat avatar IDs from cache')
+parser.add_argument('--test', action='store_true', help='Test mode: only process first 5 folders')
+args = parser.parse_args()
 
 # Change this to your actual cache path
 cache_dir = r"Cache-WindowsPlayer"  # Relative path to cache in current directory
 
+# Set processing limit based on test mode
+MAX_FOLDERS_TO_PROCESS = 5 if args.test else None
+
+if args.test:
+    print(f"🧪 TEST MODE: Processing only first {MAX_FOLDERS_TO_PROCESS} folders")
+    
 print(f"Searching for avatar IDs in: {cache_dir}")
 print("=" * 50)
 
@@ -21,39 +33,89 @@ avatar_pattern = re.compile(rb'avtr_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]
 
 found_avatars = {}  # Use dict to store avatar_id -> folder_name mapping
 files_processed = 0
+folders_processed = 0
 
 print("Searching through cache files...")
 
-for root, dirs, files in os.walk(cache_dir):
-    for file in files:
-        if file == "__data":
-            files_processed += 1
-            
-            if files_processed % 50 == 0:
-                print(f"Processed {files_processed} files...")
-            
-            try:
-                with open(os.path.join(root, file), 'rb') as f:
-                    content = f.read()
+# Get list of cache folders and optionally limit them for testing
+if MAX_FOLDERS_TO_PROCESS:
+    cache_folders = [d for d in os.listdir(cache_dir) if os.path.isdir(os.path.join(cache_dir, d))]
+    limited_folders = cache_folders[:MAX_FOLDERS_TO_PROCESS]
+    print(f"📊 Total cache folders found: {len(cache_folders)}")
+    print(f"🚀 Processing folders: {limited_folders}")
+    
+    for folder_name in limited_folders:
+        folders_processed += 1
+        folder_path = os.path.join(cache_dir, folder_name)
+        
+        if args.test:
+            print(f"\n📂 [{folders_processed}/{MAX_FOLDERS_TO_PROCESS}] Processing folder: {folder_name}")
+        
+        for root, dirs, files in os.walk(folder_path):
+            for file in files:
+                if file == "__data":
+                    files_processed += 1
                     
-                    matches = avatar_pattern.findall(content)
-                    for match in matches:
-                        avatar_id = match.decode('utf-8')
-                        # Get the cache folder name (first folder after Cache-WindowsPlayer)
-                        path_parts = root.split(os.sep)
-                        cache_folder = None
-                        for i, part in enumerate(path_parts):
-                            if part == "Cache-WindowsPlayer" and i + 1 < len(path_parts):
-                                cache_folder = path_parts[i + 1]
-                                break
+                    if files_processed % 50 == 0 and not args.test:
+                        print(f"Processed {files_processed} files...")
+                    
+                    try:
+                        with open(os.path.join(root, file), 'rb') as f:
+                            content = f.read()
+                            
+                            matches = avatar_pattern.findall(content)
+                            for match in matches:
+                                avatar_id = match.decode('utf-8')
+                                # Get the cache folder name (first folder after Cache-WindowsPlayer)
+                                path_parts = root.split(os.sep)
+                                cache_folder = None
+                                for i, part in enumerate(path_parts):
+                                    if part == "Cache-WindowsPlayer" and i + 1 < len(path_parts):
+                                        cache_folder = path_parts[i + 1]
+                                        break
+                                
+                                if cache_folder:
+                                    found_avatars[avatar_id] = cache_folder
+                                    if args.test:
+                                        print(f"  🎯 Found avatar: {avatar_id}")
+                                    else:
+                                        print(f"🎯 Found avatar: {avatar_id} in folder {cache_folder}")
+                                
+                    except Exception as e:
+                        # Silently skip files that can't be read
+                        pass
+else:
+    # Original full processing code
+    for root, dirs, files in os.walk(cache_dir):
+        for file in files:
+            if file == "__data":
+                files_processed += 1
+                
+                if files_processed % 50 == 0:
+                    print(f"Processed {files_processed} files...")
+                
+                try:
+                    with open(os.path.join(root, file), 'rb') as f:
+                        content = f.read()
                         
-                        if cache_folder:
-                            found_avatars[avatar_id] = cache_folder
-                            print(f"🎯 Found avatar: {avatar_id} in folder {cache_folder}")
-                        
-            except Exception as e:
-                # Silently skip files that can't be read
-                pass
+                        matches = avatar_pattern.findall(content)
+                        for match in matches:
+                            avatar_id = match.decode('utf-8')
+                            # Get the cache folder name (first folder after Cache-WindowsPlayer)
+                            path_parts = root.split(os.sep)
+                            cache_folder = None
+                            for i, part in enumerate(path_parts):
+                                if part == "Cache-WindowsPlayer" and i + 1 < len(path_parts):
+                                    cache_folder = path_parts[i + 1]
+                                    break
+                            
+                            if cache_folder:
+                                found_avatars[avatar_id] = cache_folder
+                                print(f"🎯 Found avatar: {avatar_id} in folder {cache_folder}")
+                            
+                except Exception as e:
+                    # Silently skip files that can't be read
+                    pass
 
 print(f"\nSearch complete! Processed {files_processed} files.")
 print(f"Found {len(found_avatars)} unique avatars.")
