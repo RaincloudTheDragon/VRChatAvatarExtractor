@@ -1,6 +1,9 @@
 # VRChat Cache Directory
 Cache-WindowsPlayer/
 
+# SpecStory conversation history
+.specstory/
+
 # Python
 __pycache__/
 *.py[cod]
@@ -47,4 +50,4 @@ ehthumbs.db
 Thumbs.db
 
 # Logs
-*.log 
+*.log
