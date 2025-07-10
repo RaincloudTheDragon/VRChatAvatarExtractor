@@ -4,6 +4,12 @@ Cache-WindowsPlayer/
 # SpecStory conversation history
 .specstory/
 
+# Output files
+vrchat_avatars.txt
+vrchat_avatars_simple.txt
+vrchat_avatars_with_names.txt
+vrchat_avatars_test.txt
+
 # Python
 __pycache__/
 *.py[cod]
@@ -51,3 +57,4 @@ Thumbs.db
 
 # Logs
 *.log
+*.txt
